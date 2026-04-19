@@ -1,9 +1,0 @@
-{
-  "name": "faith-connect-workspace",
-  "private": true,
-  "scripts": {
-    "start:client": "npm start --prefix client",
-    "start:server": "npm start --prefix server",
-    "build:client": "npm run build --prefix client"
-  }
-}
