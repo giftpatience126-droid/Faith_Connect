@@ -25,7 +25,11 @@ const conversationSchema = new mongoose.Schema({
   adminId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    required: false
+    required: true
+  },
+  encryptedKeys: {
+    user: { type: String, required: true },
+    admin: { type: String, required: true }
   },
   anonymous: { type: Boolean, default: false },
   subject: { type: String, required: true },
