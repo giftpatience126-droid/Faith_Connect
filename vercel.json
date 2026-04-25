@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "server/api.js",
+      "src": "server/index.js",
       "use": "@vercel/node"
     },
     {
@@ -16,18 +16,14 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/server/api.js"
+      "dest": "/server/index.js"
     },
     {
       "handle": "filesystem"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/client"
     }
-  ],
-  "env": {
-    "MONGO_URI": "@mongo_uri",
-    "JWT_SECRET": "@jwt_secret"
-  }
+  ]
 }
