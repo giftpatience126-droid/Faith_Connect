@@ -1,11 +1,9 @@
 require("dotenv").config();
 const app = require("./app");
-const { connectToDatabase, getDatabaseStatus } = require("./db");
 
-// For Vercel serverless
+// For Vercel serverless - no database connection needed
 module.exports = async (req, res) => {
   try {
-    await connectToDatabase();
     return app(req, res);
   } catch (error) {
     console.error("Serverless function error:", error);

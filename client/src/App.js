@@ -1,14 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import API from "./api";
-import {
-  createConversationKeyPair,
-  decryptMessageText,
-  encryptMessageText,
-  generateAccountKeyBundle,
-  getConversationKey,
-  unlockPrivateKeyFromPassword
-} from "./crypto";
 import "./App.css";
 import quizDeck from "./quizDeck";
 
@@ -240,41 +232,14 @@ function App() {
   };
 
   const decryptConversationList = useCallback(async (conversationList, sessionUser) => {
-    if (!sessionUser?.localPrivateKey) {
-      return conversationList.map((conversation) => ({
-        ...conversation,
-        messages: (conversation.messages || []).map((message) => ({
-          ...message,
-          text: "[Secure key missing on this device]"
-        }))
-      }));
-    }
-
-    return Promise.all(
-      conversationList.map(async (conversation) => {
-        try {
-          const encryptedKey =
-            sessionUser.role === "admin" ? conversation.encryptedKeys?.admin : conversation.encryptedKeys?.user;
-          const conversationKey = await getConversationKey(encryptedKey, sessionUser.localPrivateKey);
-          const messages = await Promise.all(
-            (conversation.messages || []).map(async (message) => ({
-              ...message,
-              text: await decryptMessageText(message.text, conversationKey)
-            }))
-          );
-
-          return { ...conversation, messages };
-        } catch (error) {
-          return {
-            ...conversation,
-            messages: (conversation.messages || []).map((message) => ({
-              ...message,
-              text: "[Unable to decrypt message]"
-            }))
-          };
-        }
-      })
-    );
+    // Simple implementation - no crypto needed
+    return conversationList.map((conversation) => ({
+      ...conversation,
+      messages: (conversation.messages || []).map((message) => ({
+        ...message,
+        text: message.text || "No message content"
+      }))
+    }));
   }, []);
 
   const fetchPosts = useCallback(async () => {
@@ -667,8 +632,8 @@ function App() {
     }
 
     const selectedAdmin = admins.find((admin) => admin._id === counselingForm.adminId);
-    if (!selectedAdmin?.publicKey || !user.publicKey) {
-      setStatusMessage("Secure counseling is unavailable until both accounts have encryption keys.");
+    if (!selectedAdmin) {
+      setStatusMessage("Please select an admin.");
       return;
     }
 
@@ -676,25 +641,19 @@ function App() {
     setStatusMessage("");
 
     try {
-      const { conversationKey, encryptedKeys } = await createConversationKeyPair(
-        user.publicKey,
-        selectedAdmin.publicKey
-      );
-      const encryptedText = await encryptMessageText(counselingForm.text.trim(), conversationKey);
-
+      // Simple counseling - no encryption
       const response = await axios.post(
         `${API}/counseling`,
         {
           adminId: counselingForm.adminId,
           anonymous: counselingForm.anonymous,
           subject: counselingForm.subject.trim(),
-          text: encryptedText,
-          encryptedKeys
+          text: counselingForm.text.trim()
         },
         authConfig()
       );
 
-      setStatusMessage("Your encrypted counseling request has been sent.");
+      setStatusMessage("Your counseling request has been sent.");
       setCounselingForm((current) => ({
         ...current,
         subject: "",
@@ -721,14 +680,10 @@ function App() {
     setStatusMessage("");
 
     try {
-      const encryptedKey =
-        user.role === "admin" ? currentConversation.encryptedKeys?.admin : currentConversation.encryptedKeys?.user;
-      const conversationKey = await getConversationKey(encryptedKey, user.localPrivateKey);
-      const encryptedText = await encryptMessageText(messageDraft.trim(), conversationKey);
-
+      // Simple message - no encryption
       await axios.post(
         `${API}/counseling/${currentConversation._id}/messages`,
-        { text: encryptedText },
+        { text: messageDraft.trim() },
         authConfig()
       );
 
