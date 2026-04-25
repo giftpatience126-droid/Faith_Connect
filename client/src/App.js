@@ -449,29 +449,20 @@ function App() {
     setStatusMessage("");
 
     try {
-      if (!window.crypto?.subtle) {
-        throw new Error("This browser does not support secure messaging.");
-      }
-
-      const keyBundle = await generateAccountKeyBundle(registerForm.password);
-      const response = await axios.post(`${API}/auth/register`, {
-        ...registerForm,
-        reminderTimes: emptyReminderTimes,
-        publicKey: keyBundle.publicKey,
-        encryptedPrivateKey: keyBundle.encryptedPrivateKey,
-        keySalt: keyBundle.keySalt,
-        keyIv: keyBundle.keyIv
-      });
+      console.log("Simple register data being sent:", registerForm);
+      
+      const response = await axios.post(`${API}/auth/register`, registerForm);
+      
+      console.log("Register response:", response.data);
 
       const nextUser = {
         ...response.data.user,
-        token: response.data.token,
-        localPrivateKey: keyBundle.localPrivateKey
+        token: response.data.token
       };
 
       persistUser(nextUser);
       setRegisterForm({ username: "", email: "", password: "", role: "user" });
-      setStatusMessage("Account created successfully. Your secure messaging keys were also set up.");
+      setStatusMessage("Account created successfully!");
       goToPage("dashboard");
     } catch (error) {
       setAuthError(getApiErrorMessage(error, error.message || "Could not create account."));
@@ -487,41 +478,18 @@ function App() {
     setStatusMessage("");
 
     try {
-      if (!window.crypto?.subtle) {
-        throw new Error("This browser does not support secure messaging.");
-      }
-
-      let response = await axios.post(`${API}/auth/login`, loginForm);
-      let nextPayload = response.data;
-      let localPrivateKey = "";
-
-      if (nextPayload.needsKeySetup) {
-        const keyBundle = await generateAccountKeyBundle(loginForm.password);
-        const keyResponse = await axios.put(
-          `${API}/auth/keys`,
-          {
-            publicKey: keyBundle.publicKey,
-            encryptedPrivateKey: keyBundle.encryptedPrivateKey,
-            keySalt: keyBundle.keySalt,
-            keyIv: keyBundle.keyIv
-          },
-          { headers: { Authorization: `Bearer ${nextPayload.token}` } }
-        );
-        nextPayload = keyResponse.data;
-        localPrivateKey = keyBundle.localPrivateKey;
-      } else {
-        localPrivateKey = await unlockPrivateKeyFromPassword(nextPayload.user, loginForm.password);
-      }
+      console.log("Simple login data being sent:", loginForm);
+      const response = await axios.post(`${API}/auth/login`, loginForm);
+      console.log("Login response:", response.data);
 
       const nextUser = {
-        ...nextPayload.user,
-        token: nextPayload.token,
-        localPrivateKey
+        ...response.data.user,
+        token: response.data.token
       };
 
       persistUser(nextUser);
       setLoginForm({ email: "", password: "" });
-      setStatusMessage(`Welcome back, ${nextPayload.user.username}.`);
+      setStatusMessage(`Welcome back, ${response.data.user.username}.`);
       goToPage("dashboard");
     } catch (error) {
       setAuthError(getApiErrorMessage(error, error.message || "Could not log in."));
