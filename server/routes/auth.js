@@ -23,6 +23,9 @@ const sanitizeUser = (user, includeCrypto = false) => ({
 
 router.post("/register", async (req, res) => {
   try {
+    console.log("Register request received:", req.method, req.url);
+    console.log("Request body keys:", Object.keys(req.body || {}));
+    
     const {
       username,
       email,
@@ -37,18 +40,27 @@ router.post("/register", async (req, res) => {
     const normalizedEmail = String(email || "").trim().toLowerCase();
     const normalizedUsername = String(username || "").trim();
 
+    console.log("Register attempt:", { normalizedEmail, normalizedUsername, hasPassword: !!password, hasKeys: !!(publicKey && encryptedPrivateKey && keySalt && keyIv) });
+
     if (!normalizedUsername || !normalizedEmail || !password) {
+      console.log("Validation failed: missing basic fields");
       return res.status(400).send("Username, email, and password are required.");
     }
     if (!publicKey || !encryptedPrivateKey || !keySalt || !keyIv) {
+      console.log("Validation failed: missing crypto keys");
       return res.status(400).send("Secure messaging keys are required.");
     }
 
+    console.log("Checking for existing user...");
     const existingUser = await User.findOne({ email: normalizedEmail });
+    console.log("Existing user found:", existingUser ? { id: existingUser._id, email: existingUser.email } : null);
+    
     if (existingUser) {
+      console.log("User already exists, returning error");
       return res.status(400).send("An account with this email already exists.");
     }
 
+    console.log("Creating new user...");
     const hashedPassword = await bcrypt.hash(password, 10);
     const createdUser = await User.create({
       username: normalizedUsername,
@@ -62,12 +74,15 @@ router.post("/register", async (req, res) => {
       keyIv
     });
 
+    console.log("User created successfully:", { id: createdUser._id, email: createdUser.email });
     const token = createToken(createdUser);
+    console.log("Token generated, returning success response");
     return res.status(201).json({
       token,
       user: sanitizeUser(createdUser, true)
     });
   } catch (error) {
+    console.error("Registration error:", error);
     return res.status(500).send("Could not create account.");
   }
 });
